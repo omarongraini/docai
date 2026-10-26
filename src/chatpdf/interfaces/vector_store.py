@@ -10,8 +10,17 @@ class VectorStore(ABC):
         """Persist chunks + vectors. len(chunks) == len(embeddings), else ValueError."""
 
     @abstractmethod
-    def search(self, query_embedding: list[float], top_k: int) -> list[Chunk]:
-        """Top-k most similar chunks, best first, score populated. Empty store → []."""
+    def search(
+        self,
+        query_embedding: list[float],
+        top_k: int,
+        document_ids: list[str] | None = None,
+    ) -> list[Chunk]:
+        """Top-k most similar chunks, best first.
+        If document_ids is None → search all documents.
+        Else → restrict to chunks whose document_id is in the list.
+        Empty list → [].
+        """
 
     @abstractmethod
     def delete_by_document(self, document_id: str) -> None:

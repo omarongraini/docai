@@ -6,21 +6,22 @@ from chatpdf.config import settings
 from chatpdf.interfaces import EmbedderInterface
 from chatpdf.interfaces import LLMInterface
 
+_client = OpenAI(base_url=settings.openai_base_url, api_key=settings.openai_api_key)
+
 
 class OpenAILLM(LLMInterface):
-    def __init__(self, client: OpenAI) -> None:
-        self._client = client
+    def __init__(self) -> None:
         self._model = settings.openai_chat_model
 
     def complete(self, prompt: str, *, system: str | None = None) -> str:
-        messages = self._messages(prompt, system)
-        resp = self._client.chat.completions.create(model=self._model, messages=messages)
+        resp = _client.chat.completions.create(
+            model=self._model, messages=self._messages(prompt, system)
+        )
         return resp.choices[0].message.content or ""
 
     def stream(self, prompt: str, *, system: str | None = None) -> Iterator[str]:
-        messages = self._messages(prompt, system)
-        stream = self._client.chat.completions.create(
-            model=self._model, messages=messages, stream=True
+        stream = _client.chat.completions.create(
+            model=self._model, messages=self._messages(prompt, system), stream=True
         )
         for chunk in stream:
             delta = chunk.choices[0].delta.content
@@ -37,8 +38,7 @@ class OpenAILLM(LLMInterface):
 
 
 class OpenAIEmbedder(EmbedderInterface):
-    def __init__(self, client: OpenAI, dim: int) -> None:
-        self._client = client
+    def __init__(self, dim: int) -> None:
         self._model = settings.openai_embed_model
         self._dim = dim
 
@@ -49,6 +49,5 @@ class OpenAIEmbedder(EmbedderInterface):
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        resp = self._client.embeddings.create(model=self._model, input=texts)
+        resp = _client.embeddings.create(model=self._model, input=texts, dimensions=settings.embedding_dim)
         return [item.embedding for item in resp.data]
-    
