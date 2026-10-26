@@ -1,0 +1,19 @@
+name: chatpdf
+services:
+  db:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    restart: unless-stopped
+    env_file:
+      - .env.postgres
+    ports:
+      - "5450:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatpdf -d chatpdf"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
