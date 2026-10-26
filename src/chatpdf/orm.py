@@ -36,4 +36,5 @@ class ChunkRow(Base):
     __table_args__ = (
         Index("chunks_embedding_idx", "embedding", postgresql_using="hnsw",
               postgresql_ops={"embedding": "vector_cosine_ops"}),
+        Index("chunks_document_id_idx", "document_id"),
     )
