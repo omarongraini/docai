@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.20.1",
+    "google-genai>=2.33.0",
     "openai>=3.39.0",
     "pgvector>=0.5.1",
     "psycopg[binary]>=3.3.6",

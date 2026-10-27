@@ -2,25 +2,23 @@ from collections.abc import Iterator
 
 from openai import OpenAI
 
-from chatpdf.config import settings
 from chatpdf.interfaces import EmbedderInterface
 from chatpdf.interfaces import LLMInterface
 
-_client = OpenAI(base_url=settings.openai_base_url, api_key=settings.openai_api_key)
-
 
 class OpenAILLM(LLMInterface):
-    def __init__(self) -> None:
-        self._model = settings.openai_chat_model
+    def __init__(self, *, api_key: str, base_url: str, model: str) -> None:
+        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        self._model = model
 
     def complete(self, prompt: str, *, system: str | None = None) -> str:
-        resp = _client.chat.completions.create(
+        resp = self._client.chat.completions.create(
             model=self._model, messages=self._messages(prompt, system)
         )
         return resp.choices[0].message.content or ""
 
     def stream(self, prompt: str, *, system: str | None = None) -> Iterator[str]:
-        stream = _client.chat.completions.create(
+        stream = self._client.chat.completions.create(
             model=self._model, messages=self._messages(prompt, system), stream=True
         )
         for chunk in stream:
@@ -38,8 +36,9 @@ class OpenAILLM(LLMInterface):
 
 
 class OpenAIEmbedder(EmbedderInterface):
-    def __init__(self, dim: int) -> None:
-        self._model = settings.openai_embed_model
+    def __init__(self, *, api_key: str, base_url: str, model: str, dim: int) -> None:
+        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        self._model = model
         self._dim = dim
 
     @property
@@ -49,5 +48,5 @@ class OpenAIEmbedder(EmbedderInterface):
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        resp = _client.embeddings.create(model=self._model, input=texts, dimensions=settings.embedding_dim)
+        resp = self._client.embeddings.create(model=self._model, input=texts)
         return [item.embedding for item in resp.data]

@@ -8,21 +8,23 @@ class Settings(BaseSettings):
 
     # provider selection
     llm_provider: str = "openai"
-    embedder_provider: str = "openai"
+    embed_provider: str = "openai"
     vector_store_provider: str = "pgvector"
 
-    # openai
-    openai_api_key: str
-    openai_base_url: str = "https://api.openai.com/v1"
+    
+    llm_api_key: str
+    llm_base_url: str = "https://api.openai.com/v1"
+    llm_chat_model: str = "gpt-4o-mini"
     
 
-    # openai
-    openai_embed_model: str = "text-embedding-3-small"
-    openai_chat_model: str = "gpt-4o-mini"
-
+    # embed
+    embed_model: str = "text-embedding-3-small"
+    embed_api_key:str
+    embed_base_url:str
+    
+    embed_dim: int = 1536
 
     # tuning
-    embedding_dim: int = 1536
     chunk_size: int = 800
     chunk_overlap: int = 100
     top_k: int = 5
