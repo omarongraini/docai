@@ -10,7 +10,9 @@ from chatpdf.rag.ingest import _split_text
 
 def reindex_all() -> None:
     """Rebuild all chunks in the DB using the current config (chunk size & embedder)."""
-    print(f"🔄 Starting reindex: model={settings.embed_model}, size={settings.chunk_size}")
+    print(
+        f"🔄 Starting reindex: model={settings.embed_model}, size={settings.chunk_size}"
+    )
 
     with SessionLocal() as session:
         documents = session.scalars(select(DocumentRow)).all()
@@ -27,7 +29,7 @@ def reindex_all() -> None:
 def _process_document(session, doc: DocumentRow) -> None:
     """Extract text, re-chunk, re-embed, and replace for a single document."""
     print(f"  Re-chunking: {doc.filename} ({doc.id[:8]}…)")
-    
+
     # 1. Reconstruct original text page-by-page
     pages = _reconstruct_pages(session, doc.id)
     if not pages:
@@ -47,7 +49,7 @@ def _process_document(session, doc: DocumentRow) -> None:
     # 4. Replace in DB (delete old, add new)
     session.execute(delete(ChunkRow).where(ChunkRow.document_id == doc.id))
     session.commit()
-    
+
     get_vector_store().add(new_chunks, embeddings)
     print(f"  ✅ Replaced {len(new_chunks)} chunks.")
 
@@ -78,12 +80,14 @@ def _create_chunks(document_id: str, pages: dict[int, str]) -> list[Chunk]:
 
         for piece in _split_text(text, settings.chunk_size, settings.chunk_overlap):
             if piece.strip():
-                chunks.append(Chunk(
-                    content=piece.strip(),
-                    document_id=document_id,
-                    page=page_num,
-                    chunk_index=idx,
-                ))
+                chunks.append(
+                    Chunk(
+                        content=piece.strip(),
+                        document_id=document_id,
+                        page=page_num,
+                        chunk_index=idx,
+                    )
+                )
                 idx += 1
     return chunks
 
