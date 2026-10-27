@@ -1,6 +1,6 @@
 import io
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pypdf import PdfReader
 
@@ -15,7 +15,7 @@ def ingest_pdf(filename: str, data: bytes) -> Document:
     doc = Document(
         id=str(uuid.uuid4()),
         filename=filename,
-        uploaded_at=datetime.now(timezone.utc),
+        uploaded_at=datetime.now(UTC),
     )
 
     text_per_page = _extract_pages(data)

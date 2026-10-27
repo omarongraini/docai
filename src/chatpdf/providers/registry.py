@@ -1,5 +1,4 @@
-from chatpdf.interfaces import EmbedderInterface
-from chatpdf.interfaces import LLMInterface
+from chatpdf.interfaces import EmbedderInterface, LLMInterface
 from chatpdf.providers.gemini import GeminiLLM
 from chatpdf.providers.openai import OpenAIEmbedder, OpenAILLM
 

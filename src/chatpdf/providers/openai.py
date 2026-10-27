@@ -2,9 +2,9 @@ from collections.abc import Iterator
 
 from openai import OpenAI
 
-from chatpdf.interfaces import EmbedderInterface
-from chatpdf.interfaces import LLMInterface
 from chatpdf.config import settings
+from chatpdf.interfaces import EmbedderInterface, LLMInterface
+
 
 class OpenAILLM(LLMInterface):
     def __init__(self, *, api_key: str, base_url: str, model: str) -> None:
@@ -49,5 +49,7 @@ class OpenAIEmbedder(EmbedderInterface):
     def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        resp = self._client.embeddings.create(model=self._model, input=texts, dimensions=self.config.embed_dim)
+        resp = self._client.embeddings.create(
+            model=self._model, input=texts, dimensions=self.config.embed_dim
+        )
         return [item.embedding for item in resp.data]

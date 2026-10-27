@@ -1,10 +1,10 @@
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from chatpdf.config import settings
 from chatpdf.interfaces.vector_store import VectorStore
 from chatpdf.models import Chunk
 from chatpdf.orm import ChunkRow
-from chatpdf.config import settings
 
 
 class PgVectorStore(VectorStore):
@@ -17,24 +17,26 @@ class PgVectorStore(VectorStore):
         if not chunks:
             return
         with self._session_factory() as session:
-            session.add_all([
-                ChunkRow(
-                    document_id=c.document_id,
-                    content=c.content,
-                    page=c.page,
-                    chunk_index=c.chunk_index,
-                    embedding=e,
-                )
-                for c, e in zip(chunks, embeddings)
-            ])
+            session.add_all(
+                [
+                    ChunkRow(
+                        document_id=c.document_id,
+                        content=c.content,
+                        page=c.page,
+                        chunk_index=c.chunk_index,
+                        embedding=e,
+                    )
+                    for c, e in zip(chunks, embeddings)
+                ]
+            )
             session.commit()
 
     def search(
-            self,
-            query_embedding: list[float],
-            top_k: int,
-            document_ids: list[str] | None = None,
-        ) -> list[Chunk]:
+        self,
+        query_embedding: list[float],
+        top_k: int,
+        document_ids: list[str] | None = None,
+    ) -> list[Chunk]:
         if top_k <= 0:
             return []
         if document_ids is not None and not document_ids:
@@ -66,7 +68,7 @@ class PgVectorStore(VectorStore):
         top_score = results[0].score or 0.0
         cutoff = top_score * settings.relevance_cutoff
         return [c for c in results if c.score is not None and c.score >= cutoff]
-    
+
     def delete_by_document(self, document_id: str) -> None:
         with self._session_factory() as session:
             session.execute(delete(ChunkRow).where(ChunkRow.document_id == document_id))

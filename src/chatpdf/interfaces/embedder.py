@@ -12,4 +12,3 @@ class EmbedderInterface(ABC):
     @abstractmethod
     def embed(self, texts: list[str]) -> list[list[float]]:
         """Batch embed. Returns one vector per input, same order."""
-        

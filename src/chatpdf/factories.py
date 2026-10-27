@@ -1,20 +1,21 @@
 from functools import lru_cache
 
 from chatpdf.config import settings
-from chatpdf.db import SessionLocal
-from chatpdf.interfaces import EmbedderInterface
-from chatpdf.interfaces import LLMInterface
+from chatpdf.db import SessionLocal, assert_schema_matches_settings
+from chatpdf.interfaces import EmbedderInterface, LLMInterface
 from chatpdf.interfaces.vector_store import VectorStore
 from chatpdf.providers.registry import EMBEDDER_PROVIDERS, LLM_PROVIDERS
 from chatpdf.stores.document_store import DocumentStore
 from chatpdf.stores.registry import VECTOR_STORE_PROVIDERS
-from chatpdf.db import SessionLocal, assert_schema_matches_settings
+
 
 @lru_cache(maxsize=1)
 def get_llm() -> LLMInterface:
     name = settings.llm_provider
     if name not in LLM_PROVIDERS:
-        raise ValueError(f"unknown llm_provider: {name!r}, valid: {list(LLM_PROVIDERS)}")
+        raise ValueError(
+            f"unknown llm_provider: {name!r}, valid: {list(LLM_PROVIDERS)}"
+        )
     cls = LLM_PROVIDERS[name]
 
     if name == "gemini":
@@ -32,7 +33,9 @@ def get_embedder() -> EmbedderInterface:
     assert_schema_matches_settings()
     name = settings.embed_provider
     if name not in EMBEDDER_PROVIDERS:
-        raise ValueError(f"unknown embedder_provider: {name!r}, valid: {list(EMBEDDER_PROVIDERS)}")
+        raise ValueError(
+            f"unknown embedder_provider: {name!r}, valid: {list(EMBEDDER_PROVIDERS)}"
+        )
     cls = EMBEDDER_PROVIDERS[name]
     return cls(
         api_key=settings.embed_api_key,
@@ -46,7 +49,9 @@ def get_embedder() -> EmbedderInterface:
 def get_vector_store() -> VectorStore:
     name = settings.vector_store_provider
     if name not in VECTOR_STORE_PROVIDERS:
-        raise ValueError(f"unknown vector_store_provider: {name!r}, valid: {list(VECTOR_STORE_PROVIDERS)}")
+        raise ValueError(
+            f"unknown vector_store_provider: {name!r}, valid: {list(VECTOR_STORE_PROVIDERS)}"
+        )
     return VECTOR_STORE_PROVIDERS[name](SessionLocal)
 
 

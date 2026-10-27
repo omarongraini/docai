@@ -31,10 +31,16 @@ class ChunkRow(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     page: Mapped[int] = mapped_column(nullable=False)
     chunk_index: Mapped[int] = mapped_column(nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(settings.embed_dim), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(
+        Vector(settings.embed_dim), nullable=False
+    )
 
     __table_args__ = (
-        Index("chunks_embedding_idx", "embedding", postgresql_using="hnsw",
-              postgresql_ops={"embedding": "vector_cosine_ops"}),
+        Index(
+            "chunks_embedding_idx",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
         Index("chunks_document_id_idx", "document_id"),
     )

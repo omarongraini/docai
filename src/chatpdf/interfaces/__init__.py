@@ -1,2 +1,2 @@
-from .llm import LLMInterface
-from .embedder import EmbedderInterface
+from .embedder import EmbedderInterface as EmbedderInterface
+from .llm import LLMInterface as LLMInterface

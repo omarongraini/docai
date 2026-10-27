@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -13,11 +11,13 @@ class DocumentStore:
 
     def create(self, document: Document) -> None:
         with self._session_factory() as session:
-            session.add(DocumentRow(
-                id=document.id,
-                filename=document.filename,
-                uploaded_at=document.uploaded_at,
-            ))
+            session.add(
+                DocumentRow(
+                    id=document.id,
+                    filename=document.filename,
+                    uploaded_at=document.uploaded_at,
+                )
+            )
             session.commit()
 
     def exists(self, document_id: str) -> bool:
@@ -26,7 +26,9 @@ class DocumentStore:
 
     def list(self) -> list[Document]:
         with self._session_factory() as session:
-            rows = session.scalars(select(DocumentRow).order_by(DocumentRow.uploaded_at.desc())).all()
+            rows = session.scalars(
+                select(DocumentRow).order_by(DocumentRow.uploaded_at.desc())
+            ).all()
         return [
             Document(
                 id=r.id,
