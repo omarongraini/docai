@@ -1,8 +1,7 @@
-import io
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from pypdf import PdfReader
+import pymupdf
 
 from chatpdf.config import settings
 from chatpdf.factories import get_document_store, get_embedder, get_vector_store
@@ -16,7 +15,7 @@ def ingest_pdf(filename: str, data: bytes) -> Document:
     doc = Document(
         id=str(uuid.uuid4()),
         filename=filename,
-        uploaded_at=datetime.now(timezone.utc),
+        uploaded_at=datetime.now(UTC),
     )
 
     pages = _extract_clean_pages(data)
@@ -39,21 +38,27 @@ def ingest_pdf(filename: str, data: bytes) -> Document:
 # Extraction
 # ---------------------------------------------------------
 
+
 def _extract_clean_pages(data: bytes) -> list[str]:
-    """Extract text from PDF, fixing Windows line endings and hyphenation."""
-    reader = PdfReader(io.BytesIO(data))
+    """Extract text using PyMuPDF, fixing line endings and hyphenation."""
+    doc = pymupdf.open(stream=data, filetype="pdf")
     pages = []
-    for page in reader.pages:
-        text = page.extract_text() or ""
+
+    for page in doc:
+        text = page.get_text("text") or ""
+        # Clean up formatting
         text = text.replace("\r\n", "\n").replace("\r", "\n")
-        text = text.replace("-\n", "")  # Fix hyphenated words split across lines
+        text = text.replace("-\n", "")  # Fix hyphenated words across lines
         pages.append(text)
+
+    doc.close()
     return pages
 
 
 # ---------------------------------------------------------
 # Chunking Pipeline
 # ---------------------------------------------------------
+
 
 def _chunk_document(document_id: str, pages: list[str]) -> list[Chunk]:
     """Iterate pages, split text, and attach metadata."""
@@ -68,13 +73,15 @@ def _chunk_document(document_id: str, pages: list[str]) -> list[Chunk]:
         for piece in _split_text(text, settings.chunk_size, settings.chunk_overlap):
             if not piece.strip():
                 continue
-                
-            chunks.append(Chunk(
-                content=piece.strip(),
-                document_id=document_id,
-                page=page_num,
-                chunk_index=chunk_index,
-            ))
+
+            chunks.append(
+                Chunk(
+                    content=piece.strip(),
+                    document_id=document_id,
+                    page=page_num,
+                    chunk_index=chunk_index,
+                )
+            )
             chunk_index += 1
 
     return chunks
@@ -95,6 +102,7 @@ def _split_text(text: str, size: int, overlap: int) -> list[str]:
 # Recursive Splitting Logic
 # ---------------------------------------------------------
 
+
 def _recursive_split(text: str, separators: list[str], limit: int) -> list[str]:
     """Recursively split text by the best available separator."""
     if len(text) <= limit:
@@ -102,7 +110,7 @@ def _recursive_split(text: str, separators: list[str], limit: int) -> list[str]:
 
     # Find the highest-priority separator present in the text
     sep = next((s for s in separators if s in text), "")
-    
+
     # If no separators match, split at word boundary or hard cut
     if not sep:
         return _split_at_word_boundary(text, limit)
@@ -110,7 +118,9 @@ def _recursive_split(text: str, separators: list[str], limit: int) -> list[str]:
     return _split_by_separator(text, sep, separators, limit)
 
 
-def _split_by_separator(text: str, sep: str, separators: list[str], limit: int) -> list[str]:
+def _split_by_separator(
+    text: str, sep: str, separators: list[str], limit: int
+) -> list[str]:
     """Merge pieces separated by `sep` until they hit the size limit."""
     parts = text.split(sep)
     chunks = []
@@ -118,7 +128,7 @@ def _split_by_separator(text: str, sep: str, separators: list[str], limit: int) 
 
     for part in parts:
         candidate = (current + sep + part) if current else part
-        
+
         if len(candidate) <= limit:
             current = candidate
             continue
@@ -129,7 +139,9 @@ def _split_by_separator(text: str, sep: str, separators: list[str], limit: int) 
             current = ""
 
         if len(part) > limit:
-            next_separators = separators[separators.index(sep) + 1 :] if sep in separators else []
+            next_separators = (
+                separators[separators.index(sep) + 1 :] if sep in separators else []
+            )
             if next_separators:
                 chunks.extend(_recursive_split(part, next_separators, limit))
             else:
@@ -159,7 +171,7 @@ def _split_at_word_boundary(text: str, limit: int) -> list[str]:
     chunks = [head] if head else []
     if tail:
         chunks.extend(_split_at_word_boundary(tail, limit))
-    
+
     return chunks
 
 
@@ -167,7 +179,7 @@ def _apply_overlap(chunks: list[str], overlap: int) -> list[str]:
     """Prepend the tail of the previous chunk to the next chunk."""
     if overlap <= 0 or len(chunks) <= 1:
         return chunks
-        
+
     overlapped = [chunks[0]]
     for i in range(1, len(chunks)):
         tail = chunks[i - 1][-overlap:]
