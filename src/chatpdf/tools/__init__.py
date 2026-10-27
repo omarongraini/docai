@@ -1,0 +1,1 @@
+from .reindex import reindex_all
