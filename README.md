@@ -41,6 +41,20 @@ uv run ruff check .
 uv run ruff format .
 uv run pytest
 ```
+
+## Maintenance
+
+If you change your `EMBED_MODEL`, `CHUNK_SIZE`, or `CHUNK_OVERLAP` in `.env`, your existing database vectors and chunks become incompatible. You do not need to re-upload your PDFs. Use the built-in reindex CLI to reconstruct the text from the database and safely re-chunk/re-embed everything in place.
+
+> **⚠️ WARNING:**
+> If you change `EMBED_MODEL`, you **must** first run the Alembic migration to update the database column dimension (e.g., from `vector(1536)` to `vector(768)`). If you skip the migration, the insert will fail.
+
+Run the reindexer after migrating:
+
+```bash
+uv run reindex
+```
+
 ## Known limitations
 
 - **No conversational memory** — each question retrieves and answers
