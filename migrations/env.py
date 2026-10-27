@@ -72,11 +72,12 @@ def run_migrations_online() -> None:
             connection=connection, target_metadata=target_metadata
         )
 
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        connection.commit()
         with context.begin_transaction():
             context.run_migrations()
 
-        connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        connection.commit()
+        
         
 if context.is_offline_mode():
     run_migrations_offline()
