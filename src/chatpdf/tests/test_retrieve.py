@@ -26,7 +26,10 @@ class FakeStore:
 
 
 def test_retrieve_passes_filter(monkeypatch):
-    store = FakeStore([Chunk("x", "doc1", 1, 0), Chunk("y", "doc2", 1, 1)])
+    # Add score=0.5 to the fake chunks
+    store = FakeStore(
+        [Chunk("x", "doc1", 1, 0, score=0.5), Chunk("y", "doc2", 1, 1, score=0.5)]
+    )
     monkeypatch.setattr(chat, "get_embedder", lambda: FakeEmbedder())
     monkeypatch.setattr(chat, "get_vector_store", lambda: store)
     result = chat.retrieve("q?", document_ids=["doc1"])

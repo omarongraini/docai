@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import UTC, datetime
 
@@ -11,11 +12,19 @@ _SEPARATORS = ["\n\n", "\n", ". ", "؟ ", "! ", "، ", " ", ""]
 
 
 def ingest_pdf(filename: str, data: bytes) -> Document:
-    """Main pipeline: PDF bytes -> parsed pages -> chunks -> vectors -> DB."""
+    file_hash = hashlib.sha256(data).hexdigest()
+    doc_store = get_document_store()
+
+    # 1. Check for duplicates
+    existing = doc_store.get_by_hash(file_hash)
+    if existing:
+        return existing
+
     doc = Document(
         id=str(uuid.uuid4()),
         filename=filename,
         uploaded_at=datetime.now(UTC),
+        file_hash=file_hash,
     )
 
     pages = _extract_clean_pages(data)
@@ -24,11 +33,9 @@ def ingest_pdf(filename: str, data: bytes) -> Document:
     if not chunks:
         raise ValueError(f"No extractable text in {filename!r}")
 
-    # 1. Embed all chunks in one batch
     embeddings = get_embedder().embed([c.content for c in chunks])
 
-    # 2. Save Document first (FK constraint), then Chunks
-    get_document_store().create(doc)
+    doc_store.create(doc)
     get_vector_store().add(chunks, embeddings)
 
     return doc
@@ -176,12 +183,20 @@ def _split_at_word_boundary(text: str, limit: int) -> list[str]:
 
 
 def _apply_overlap(chunks: list[str], overlap: int) -> list[str]:
-    """Prepend the tail of the previous chunk to the next chunk."""
+    """Prepend the tail of the previous chunk to the next chunk, respecting word boundaries."""
     if overlap <= 0 or len(chunks) <= 1:
         return chunks
 
     overlapped = [chunks[0]]
     for i in range(1, len(chunks)):
+        # Get the rough overlap tail
         tail = chunks[i - 1][-overlap:]
-        overlapped.append(tail + chunks[i])
+
+        # Find the first space in the tail, and drop everything before it
+        # so we don't start the new chunk with a partial word like "ion,"
+        if " " in tail:
+            tail = tail.split(" ", 1)[1]
+
+        overlapped.append(tail + " " + chunks[i])
+
     return overlapped

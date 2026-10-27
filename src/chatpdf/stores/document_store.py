@@ -9,6 +9,20 @@ class DocumentStore:
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self._session_factory = session_factory
 
+    def get_by_hash(self, file_hash: str) -> Document | None:
+        with self._session_factory() as session:
+            row = session.scalars(
+                select(DocumentRow).where(DocumentRow.file_hash == file_hash)
+            ).first()
+            if not row:
+                return None
+            return Document(
+                id=row.id,
+                filename=row.filename,
+                uploaded_at=row.uploaded_at,
+                file_hash=row.file_hash,
+            )
+
     def create(self, document: Document) -> None:
         with self._session_factory() as session:
             session.add(
@@ -16,6 +30,7 @@ class DocumentStore:
                     id=document.id,
                     filename=document.filename,
                     uploaded_at=document.uploaded_at,
+                    file_hash=document.file_hash,
                 )
             )
             session.commit()
@@ -34,6 +49,7 @@ class DocumentStore:
                 id=r.id,
                 filename=r.filename,
                 uploaded_at=r.uploaded_at,
+                file_hash=r.file_hash,  # <--- Make sure this is here
             )
             for r in rows
         ]

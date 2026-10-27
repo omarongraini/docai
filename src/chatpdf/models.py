@@ -6,6 +6,7 @@ from datetime import datetime
 class Document:
     id: str
     filename: str
+    file_hash: str
     uploaded_at: datetime
 
 

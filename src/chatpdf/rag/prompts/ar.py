@@ -7,4 +7,4 @@ SYSTEM = (
 NO_CONTEXT = "(لا يوجد سياق)"
 CONTEXT_HEADER = "السياق:"
 QUESTION_HEADER = "السؤال:"
-CHUNK_LABEL = "[مقطع {i} | مستند {doc} | صفحة {page}]"
+CHUNK_LABEL = "[{doc}، صفحة {page}، مقطع {i}]"

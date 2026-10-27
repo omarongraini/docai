@@ -1,8 +1,10 @@
 import re
+import time
 
 import streamlit as st
 
 from chatpdf.factories import get_document_store
+from chatpdf.logger import logger
 from chatpdf.rag.chat import retrieve, stream_from_chunks
 from chatpdf.rag.ingest import ingest_pdf
 
@@ -17,6 +19,7 @@ st.markdown(
         white-space: nowrap !important;
         font-size: 0.85rem !important;
     }
+    [data-testid="stMarkdownContainer"] { overflow: visible !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -29,18 +32,35 @@ def _is_arabic(text: str) -> bool:
 
 def _render_html(content: str, lang: str) -> str:
     if lang == "ar":
-        return f"<div dir='rtl' style='text-align: right; unicode-bidi: plaintext;'>{content}</div>"
-    return f"<div style='text-align: left;'>{content}</div>"
+        return f"<div dir='rtl' style='text-align: right; unicode-bidi: plaintext; white-space: pre-wrap;'>{content}</div>"
+    return f"<div style='text-align: left; white-space: pre-wrap;'>{content}</div>"
 
 
 def _filter_cited_chunks(chunks: list, response: str) -> list:
     if not chunks or not response:
         return chunks
-    cited_pages = {int(m) for m in re.findall(r"page\s+(\d+)", response, re.IGNORECASE)}
-    cited_pages.update(int(m) for m in re.findall(r"صفحة\s+(\d+)", response))
-    if not cited_pages:
+
+    brackets = re.findall(r"\[(.*?)\]", response)
+    cited = set()
+
+    for text in brackets:
+        p_match = re.search(r"(?:page|صفحة)\s*(\d+)", text, re.IGNORECASE)
+        c_match = re.search(r"(?:chunk|مقطع)\s*(\d+)", text, re.IGNORECASE)
+        if p_match and c_match:
+            cited.add((int(p_match.group(1)), int(c_match.group(1))))
+
+    if not cited:
         return []
-    return [c for c in chunks if c.page in cited_pages]
+
+    seen = set()
+    result = []
+    for c in chunks:
+        if (c.page, c.chunk_index) in cited:
+            sig = (c.document_id, c.page, c.chunk_index)
+            if sig not in seen:
+                seen.add(sig)
+                result.append(c)
+    return result
 
 
 if "messages" not in st.session_state:
@@ -50,18 +70,21 @@ with st.sidebar:
     st.header("📄 Documents")
     uploaded = st.file_uploader("Upload a PDF", type=["pdf"])
     if uploaded is not None and st.button("Ingest", type="primary"):
-        with st.spinner(f"Ingesting {uploaded.name}…"):
+        with st.spinner(f"Processing {uploaded.name}…"):
             try:
                 doc = ingest_pdf(uploaded.name, uploaded.getvalue())
-                st.success(f"Ingested {doc.filename}")
-                st.rerun()
-            except Exception as e:  # noqa: BLE001 — UI boundary, surface any failure
+                if doc.filename != uploaded.name:
+                    st.info(f"File already exists as '{doc.filename}'.")
+                else:
+                    st.success(f"Ingested {doc.filename}")
+                    st.rerun()
+            except Exception as e:  # noqa: BLE001 (UI boundary: catch all to prevent app crash) # noqa: BLE001 (UI boundary: catch all to prevent app crash)
                 st.error(f"Ingest failed: {e}")
 
     st.divider()
     try:
         docs = get_document_store().list()
-    except Exception as e:  # noqa: BLE001 — UI boundary, surface any failure
+    except Exception as e:  # noqa: BLE001 (UI boundary: catch all to prevent app crash) # noqa: BLE001 (UI boundary: catch all to prevent app crash)
         docs = []
         st.caption(f"Could not load documents: {e}")
 
@@ -79,13 +102,13 @@ with st.sidebar:
 
     try:
         filename_map = {d.id: d.filename for d in get_document_store().list()}
-    except Exception as e:  # noqa: BLE001 — UI boundary, surface any failure
+    except Exception as e:  # noqa: BLE001 (UI boundary: catch all to prevent app crash) # noqa: BLE001 (UI boundary: catch all to prevent app crash)
         filename_map = {}
         st.caption(f"⚠️ Could not load filenames: {e}")
 
 st.title("Chat with your PDFs")
 
-# Render history
+# Render History (Only successful messages are saved here)
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(
@@ -93,60 +116,63 @@ for msg in st.session_state.messages:
             unsafe_allow_html=True,
         )
 
-if prompt := st.chat_input("Ask a question about your documents…"):
-    lang = "ar" if _is_arabic(prompt) else "en"
-    st.session_state.messages.append(
-        {"role": "user", "content": prompt, "language": lang}
+if not selected_ids:
+    st.warning(
+        "⚠️ Please select at least one document in the sidebar to start chatting."
     )
+else:
+    if prompt := st.chat_input("Ask a question about your documents…"):
+        logger.info(f"=== User asked: {prompt!r} ===")
 
-    with st.chat_message("user"):
-        st.markdown(_render_html(prompt, lang), unsafe_allow_html=True)
+        lang = "ar" if _is_arabic(prompt) else "en"
+        # Save the user's prompt
+        st.session_state.messages.append(
+            {"role": "user", "content": prompt, "language": lang}
+        )
 
-    with st.chat_message("assistant"):
-        chunks = []
-        response = ""
+        with st.chat_message("user"):
+            st.markdown(_render_html(prompt, lang), unsafe_allow_html=True)
 
-        try:
-            # 1. Search phase
-            with st.spinner("🔍 Searching documents…"):
-                chunks = retrieve(prompt, document_ids=selected_ids)
+        with st.chat_message("assistant"):
+            chunks = []
+            response = ""
+            start_time = time.time()
 
-            # 2. Generation phase
-            # Create one empty placeholder for the text to stream into
-            placeholder = st.empty()
+            try:
+                with st.spinner("🔍 Searching and generating…"):
+                    chunks = retrieve(prompt, document_ids=selected_ids)
+                    # Buffer the stream in memory to prevent mid-stream crashes
+                    tokens = list(
+                        stream_from_chunks(
+                            prompt, chunks, language=lang, filenames=filename_map
+                        )
+                    )
+                    response = "".join(tokens)
+            except Exception as e:  # noqa: BLE001 (UI boundary: catch all to prevent app crash)
+                logger.error(f"Streaming error: {e}")
+                response = f"⚠️ Error: {e}"
 
-            # Show the "Generating..." message inside the placeholder
-            placeholder.markdown("🤖 Generating answer…")
+            # If it's an error, show the red box. If not, show the answer.
+            if response.startswith("⚠️ Error:"):
+                st.error(response)
+            else:
+                st.markdown(_render_html(response, lang), unsafe_allow_html=True)
 
-            tokens = []
-            for token in stream_from_chunks(
-                prompt, chunks, language=lang, filenames=filename_map
-            ):
-                tokens.append(token)
-                # Overwrite the placeholder with the growing text + a blinking cursor
-                placeholder.markdown(
-                    _render_html("".join(tokens) + "▌", lang), unsafe_allow_html=True
-                )
+                elapsed = time.time() - start_time
+                chunks = _filter_cited_chunks(chunks, response)
 
-            response = "".join(tokens)
-            # Final render (remove the cursor)
-            placeholder.markdown(_render_html(response, lang), unsafe_allow_html=True)
+                if chunks:
+                    widths = [2] * len(chunks) + [10]
+                    cols = st.columns(widths, gap="small")
+                    for i, c in enumerate(chunks):
+                        fname = filename_map.get(c.document_id, c.document_id[:8])
+                        with cols[i], st.popover(f"📎 {fname} · p{c.page}"):
+                            st.caption(f"score {c.score:.2f} · chunk {c.chunk_index}")
+                            st.text(c.content)
 
-        except Exception as e:  # noqa: BLE001 — UI boundary, surface any failure
-            response = f"⚠️ Error: {e}"
-            st.markdown(response)
+                st.caption(f"⏱️ {elapsed:.2f}s")
 
-        chunks = _filter_cited_chunks(chunks, response)
-
-        if chunks:
-            widths = [2] * len(chunks) + [10]
-            cols = st.columns(widths, gap="small")
-            for i, c in enumerate(chunks):
-                fname = filename_map.get(c.document_id, c.document_id[:8])
-                with cols[i], st.popover(f"📎 {fname} · p{c.page}"):
-                    st.caption(f"score {c.score:.2f} · chunk {c.chunk_index}")
-                    st.text(c.content)
-
-    st.session_state.messages.append(
-        {"role": "assistant", "content": response, "language": lang}
-    )
+        # SAVE TO HISTORY: This keeps the error on the screen!
+        st.session_state.messages.append(
+            {"role": "assistant", "content": response, "language": lang}
+        )
