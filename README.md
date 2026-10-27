@@ -54,17 +54,12 @@ Run the reindexer after migrating:
 ```bash
 uv run reindex
 ```
-
 ## Known limitations
 
-- **No conversational memory** — each question retrieves and answers
-  independently. Follow-ups like "what about 2024?" won't resolve pronouns.
-- **Naive retrieval for broad questions** — "should I invest?" returns
-  whatever ranks highest; ask specific questions for best results.
-- **No streaming for Arabic** — buffered to preserve RTL alignment.
+- **No conversational memory** — each question retrieves and answers independently. Follow-ups like "what about 2024?" won't resolve pronouns.
+- **Naive retrieval for broad questions** — "should I invest?" returns whatever ranks highest; ask specific questions for best results.
 - **No authentication** — single-user local app.
-- **Chunking is character-based** — recursive splitter respects paragraph and
-  sentence boundaries but has no semantic awareness.
+- **Character-based chunking** — the recursive splitter respects paragraph, sentence, and word boundaries (and fixes PDF hyphenation), but does not use semantic/AI chunking.
 
 ## License
 
