@@ -1,6 +1,5 @@
 # tests/test_split.py
-from chatpdf.rag.ingest import _split
-
+from chatpdf.rag.ingest import _split_text as _split 
 
 def test_empty():
     assert _split("", 100, 10) == []
