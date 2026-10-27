@@ -32,7 +32,15 @@ def ingest_pdf(filename: str, data: bytes) -> Document:
 
 def _extract_pages(data: bytes) -> list[str]:
     reader = PdfReader(io.BytesIO(data))
-    return [page.extract_text() or "" for page in reader.pages]
+    pages = []
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        # Clean up Windows line endings and random carriage returns
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        # Optional: Fix hyphenated words broken across lines (e.g. "gener-\nation")
+        text = text.replace("-\n", "")
+        pages.append(text)
+    return pages
 
 
 def _chunk_pages(document_id: str, pages: list[str]) -> list[Chunk]:
@@ -72,8 +80,22 @@ def _recursive_split(text: str, seps: list[str], size: int) -> list[str]:
         return [text] if text.strip() else []
 
     sep = next((s for s in seps if s in text), "")
-    parts = text.split(sep) if sep else list(text)
 
+    # If no separator is found at all, split at the nearest space
+    if not sep:
+        if " " in text:
+            # Find the last space before the size limit
+            split_idx = text.rfind(" ", 0, size)
+            if split_idx == -1:
+                split_idx = size  # No space, force hard cut
+            return [text[:split_idx]] + _recursive_split(
+                text[split_idx:].lstrip(), seps, size
+            )
+        else:
+            # True unbroken string (like a URL or base64), hard cut
+            return [text[i : i + size] for i in range(0, len(text), size)]
+
+    parts = text.split(sep)
     chunks: list[str] = []
     current = ""
 
@@ -92,8 +114,15 @@ def _recursive_split(text: str, seps: list[str], size: int) -> list[str]:
             if finer:
                 chunks.extend(_recursive_split(part, finer, size))
             else:
-                # hard-cut: no finer separator available
-                chunks.extend(part[i : i + size] for i in range(0, len(part), size))
+                # Split the part at the nearest space
+                split_idx = part.rfind(" ", 0, size)
+                if split_idx == -1:
+                    chunks.extend(part[i : i + size] for i in range(0, len(part), size))
+                else:
+                    chunks.append(part[:split_idx])
+                    remainder = part[split_idx:].lstrip()
+                    if remainder:
+                        chunks.extend(_recursive_split(remainder, seps, size))
         else:
             current = part
 
