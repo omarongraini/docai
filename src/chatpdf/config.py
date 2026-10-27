@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_chat_model: str = "gpt-4o-mini"
     
-
+    relevance_cutoff: float = 0.75
+    
     # embed
     embed_model: str = "text-embedding-3-small"
     embed_api_key:str

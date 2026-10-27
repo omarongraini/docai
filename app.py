@@ -6,6 +6,20 @@ from chatpdf.rag.ingest import ingest_pdf
 
 st.set_page_config(page_title="Chat with PDF", page_icon="📄", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    div[data-testid="stHorizontalBlock"] { gap: 0.4rem !important; }
+    div[data-testid="stPopover"] button {
+        padding: 0.25rem 0.6rem !important;
+        white-space: nowrap !important;
+        font-size: 0.85rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "language" not in st.session_state:
@@ -52,6 +66,11 @@ with st.sidebar:
         selected_ids = []
         st.caption("No documents yet.")
 
+    try:
+        filename_map = {d.id: d.filename for d in get_document_store().list()}
+    except Exception:
+        filename_map = {}
+
 st.title("Chat with your PDFs")
 
 for msg in st.session_state.messages:
@@ -83,37 +102,48 @@ if prompt := st.chat_input("Ask a question about your documents…"):
     with st.chat_message("assistant"):
         chunks = []
         response = ""
+        status_ph = st.empty()
         try:
-            with st.status("🔍 Searching documents…", expanded=False) as status:
-                chunks = retrieve(prompt, document_ids=selected_ids)
-                status.update(label=f"✅ Found {len(chunks)} chunks", state="complete")
+            status_ph.status("🔍 Searching documents…", expanded=False)
+            chunks = retrieve(prompt, document_ids=selected_ids)
+            status_ph.status("🤖 Generating answer…", expanded=False)
 
             if lang == "ar":
-                with st.spinner("🤖 Generating answer…"):
-                    response = "".join(
-                        stream_from_chunks(prompt, chunks, language="ar")
-                    )
+                tokens = []
+                for token in stream_from_chunks(prompt, chunks, language="ar"):
+                    if not tokens:
+                        status_ph.empty()
+                    tokens.append(token)
+                response = "".join(tokens)
                 st.markdown(
                     f"<div dir='rtl' style='text-align: right; unicode-bidi: plaintext;'>"
                     f"{response}</div>",
                     unsafe_allow_html=True,
                 )
             else:
-                response = st.write_stream(
-                    stream_from_chunks(prompt, chunks, language="en")
-                )
+                def _stream():
+                    first = True
+                    for token in stream_from_chunks(prompt, chunks, language="en"):
+                        if first:
+                            status_ph.empty()
+                            first = False
+                        yield token
+
+                response = st.write_stream(_stream())
         except Exception as e:
+            status_ph.empty()
             response = f"⚠️ Error: {e}"
             st.markdown(response)
 
         if chunks:
-            with st.expander(f"📎 Sources ({len(chunks)})"):
-                for c in chunks:
-                    st.caption(
-                        f"• doc `{c.document_id[:8]}…` page {c.page} "
-                        f"(score {c.score:.2f})"
-                    )
-                    st.text(c.content)
+            widths = [2] * len(chunks) + [10]
+            cols = st.columns(widths, gap="small")
+            for i, c in enumerate(chunks):
+                fname = filename_map.get(c.document_id, c.document_id[:8])
+                with cols[i]:
+                    with st.popover(f"📎 {fname} · p{c.page}"):
+                        st.caption(f"score {c.score:.2f} · chunk {c.chunk_index}")
+                        st.text(c.content)
 
     st.session_state.messages.append(
         {"role": "assistant", "content": response, "language": lang}

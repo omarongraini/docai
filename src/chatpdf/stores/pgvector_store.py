@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from chatpdf.interfaces.vector_store import VectorStore
 from chatpdf.models import Chunk
 from chatpdf.orm import ChunkRow
+from chatpdf.config import settings
 
 
 class PgVectorStore(VectorStore):
@@ -47,7 +48,8 @@ class PgVectorStore(VectorStore):
 
         with self._session_factory() as session:
             rows = session.execute(stmt).all()
-        return [
+
+        results = [
             Chunk(
                 content=r.ChunkRow.content,
                 document_id=r.ChunkRow.document_id,
@@ -57,6 +59,14 @@ class PgVectorStore(VectorStore):
             )
             for r in rows
         ]
+
+        if not results:
+            return []
+
+        top_score = results[0].score or 0.0
+        cutoff = top_score * settings.relevance_cutoff
+        return [c for c in results if c.score is not None and c.score >= cutoff]
+    
     def delete_by_document(self, document_id: str) -> None:
         with self._session_factory() as session:
             session.execute(delete(ChunkRow).where(ChunkRow.document_id == document_id))
