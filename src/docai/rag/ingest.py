@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 
 import pymupdf
 
-from chatpdf.config import settings
-from chatpdf.factories import get_document_store, get_embedder, get_vector_store
-from chatpdf.models import Chunk, Document
+from docai.config import settings
+from docai.factories import get_document_store, get_embedder, get_vector_store
+from docai.models import Chunk, Document
 
 _SEPARATORS = ["\n\n", "\n", ". ", "؟ ", "! ", "، ", " ", ""]
 

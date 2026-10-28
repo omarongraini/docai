@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from chatpdf.models import Document
-from chatpdf.orm import DocumentRow
+from docai.models import Document
+from docai.orm import DocumentRow
 
 
 class DocumentStore:

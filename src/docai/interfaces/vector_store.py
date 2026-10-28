@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from chatpdf.models import Chunk
+from docai.models import Chunk
 
 
 class VectorStore(ABC):

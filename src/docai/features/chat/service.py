@@ -1,14 +1,14 @@
 from collections.abc import Iterator
 
-from chatpdf.config import settings
-from chatpdf.factories import (
+from docai.config import settings
+from docai.factories import (
     get_embedder,
     get_llm,
     get_vector_store,
 )
-from chatpdf.features.chat.prompts import get_prompts
-from chatpdf.logger import logger
-from chatpdf.models import Chunk
+from docai.features.chat.prompts import get_prompts
+from docai.logger import logger
+from docai.models import Chunk
 
 
 def retrieve(

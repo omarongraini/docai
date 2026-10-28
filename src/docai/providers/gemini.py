@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from google import genai
 from google.genai import types
 
-from chatpdf.interfaces import LLMInterface
+from docai.interfaces import LLMInterface
 
 
 class GeminiLLM(LLMInterface):

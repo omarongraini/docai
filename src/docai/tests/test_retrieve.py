@@ -1,6 +1,6 @@
 # tests/test_retrieve.py
-from chatpdf.features.chat import service as chat
-from chatpdf.models import Chunk
+from docai.features.chat import service as chat
+from docai.models import Chunk
 
 
 class FakeEmbedder:

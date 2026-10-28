@@ -2,8 +2,8 @@ from collections.abc import Iterator
 
 from openai import OpenAI
 
-from chatpdf.config import settings
-from chatpdf.interfaces import EmbedderInterface, LLMInterface
+from docai.config import settings
+from docai.interfaces import EmbedderInterface, LLMInterface
 
 
 class OpenAILLM(LLMInterface):

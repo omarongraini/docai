@@ -1,11 +1,11 @@
 from sqlalchemy import delete, select
 
-from chatpdf.config import settings
-from chatpdf.db import SessionLocal
-from chatpdf.factories import get_embedder, get_vector_store
-from chatpdf.models import Chunk
-from chatpdf.orm import ChunkRow, DocumentRow
-from chatpdf.rag.ingest import _split_text
+from docai.config import settings
+from docai.db import SessionLocal
+from docai.factories import get_embedder, get_vector_store
+from docai.models import Chunk
+from docai.orm import ChunkRow, DocumentRow
+from docai.rag.ingest import _split_text
 
 
 def reindex_all() -> None:

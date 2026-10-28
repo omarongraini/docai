@@ -1,4 +1,4 @@
-from chatpdf.features.cv.prompts import ar, en
+from docai.features.cv.prompts import ar, en
 
 _CV_PROMPTS = {"en": en, "ar": ar}
 

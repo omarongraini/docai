@@ -1,10 +1,10 @@
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from chatpdf.config import settings
-from chatpdf.interfaces.vector_store import VectorStore
-from chatpdf.models import Chunk
-from chatpdf.orm import ChunkRow
+from docai.config import settings
+from docai.interfaces.vector_store import VectorStore
+from docai.models import Chunk
+from docai.orm import ChunkRow
 
 
 class PgVectorStore(VectorStore):

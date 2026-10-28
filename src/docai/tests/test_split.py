@@ -1,5 +1,5 @@
 # tests/test_split.py
-from chatpdf.rag.ingest import _split_text as _split
+from docai.rag.ingest import _split_text as _split
 
 
 def test_empty():

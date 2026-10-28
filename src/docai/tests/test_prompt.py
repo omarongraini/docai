@@ -1,6 +1,6 @@
 # tests/test_prompt.py
-from chatpdf.features.chat import _build_prompt
-from chatpdf.models import Chunk
+from docai.features.chat import _build_prompt
+from docai.models import Chunk
 
 
 def _chunk(content="x", doc="d1", page=1):

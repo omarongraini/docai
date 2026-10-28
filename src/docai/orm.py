@@ -13,7 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from chatpdf.config import settings
+from docai.config import settings
 
 convention = {
     "ix": "ix_%(column_0_label)s",

@@ -1,12 +1,12 @@
 from functools import lru_cache
 
-from chatpdf.config import settings
-from chatpdf.db import SessionLocal, assert_schema_matches_settings
-from chatpdf.interfaces import EmbedderInterface, LLMInterface
-from chatpdf.interfaces.vector_store import VectorStore
-from chatpdf.providers.registry import EMBEDDER_PROVIDERS, LLM_PROVIDERS
-from chatpdf.stores.document_store import DocumentStore
-from chatpdf.stores.registry import VECTOR_STORE_PROVIDERS
+from docai.config import settings
+from docai.db import SessionLocal, assert_schema_matches_settings
+from docai.interfaces import EmbedderInterface, LLMInterface
+from docai.interfaces.vector_store import VectorStore
+from docai.providers.registry import EMBEDDER_PROVIDERS, LLM_PROVIDERS
+from docai.stores.document_store import DocumentStore
+from docai.stores.registry import VECTOR_STORE_PROVIDERS
 
 
 @lru_cache(maxsize=1)
