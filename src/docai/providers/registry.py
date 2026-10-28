@@ -1,6 +1,6 @@
-from chatpdf.interfaces import EmbedderInterface, LLMInterface
-from chatpdf.providers.gemini import GeminiLLM
-from chatpdf.providers.openai import OpenAIEmbedder, OpenAILLM
+from docai.interfaces import EmbedderInterface, LLMInterface
+from docai.providers.gemini import GeminiLLM
+from docai.providers.openai import OpenAIEmbedder, OpenAILLM
 
 LLM_PROVIDERS: dict[str, type[LLMInterface]] = {
     "openai": OpenAILLM,

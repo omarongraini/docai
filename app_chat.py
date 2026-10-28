@@ -3,10 +3,10 @@ import time
 
 import streamlit as st
 
-from chatpdf.factories import get_document_store
-from chatpdf.features.chat import retrieve, stream_from_chunks
-from chatpdf.logger import logger
-from chatpdf.rag.ingest import ingest_pdf
+from docai.factories import get_document_store
+from docai.features.chat import retrieve, stream_from_chunks
+from docai.logger import logger
+from docai.rag.ingest import ingest_pdf
 
 st.set_page_config(page_title="Chat with PDF", page_icon="📄", layout="wide")
 

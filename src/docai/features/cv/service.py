@@ -1,8 +1,8 @@
 import json
 
-from chatpdf.factories import get_llm
-from chatpdf.features.cv.prompts import get_cv_prompts
-from chatpdf.features.cv.schema import CVEvaluation, SkillMatch
+from docai.factories import get_llm
+from docai.features.cv.prompts import get_cv_prompts
+from docai.features.cv.schema import CVEvaluation, SkillMatch
 
 
 def evaluate_cv(cv_text: str, jd_text: str, language: str = "en") -> CVEvaluation:

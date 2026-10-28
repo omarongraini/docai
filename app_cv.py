@@ -1,7 +1,7 @@
 import streamlit as st
 
-from chatpdf.features.cv.service import evaluate_cv
-from chatpdf.rag.ingest import _extract_clean_pages
+from docai.features.cv.service import evaluate_cv
+from docai.rag.ingest import _extract_clean_pages
 
 st.set_page_config(page_title="CV Evaluator", page_icon="📄", layout="wide")
 

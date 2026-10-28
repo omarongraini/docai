@@ -1,5 +1,5 @@
 [project]
-name = "chatpdf"
+name = "docai"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [project.scripts]
-chatpdf = "chatpdf:main"
-reindex = "chatpdf.tools.reindex:reindex_all"
+docai = "docai:main"
+reindex = "docai.tools.reindex:reindex_all"
 
 [build-system]
 requires = ["uv_build>=0.12.18,<0.13.0"]

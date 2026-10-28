@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import sessionmaker
 
-from chatpdf.config import settings
+from docai.config import settings
 
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)

@@ -20,7 +20,7 @@ def setup_logger() -> logging.Logger:
 
     # 2. File handler (Rotates at 5MB, keeps 3 backups)
     file_handler = RotatingFileHandler(
-        "chatpdf.log", maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
+        "docai.log", maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
     )
     file_handler.setFormatter(formatter)
     log.addHandler(file_handler)
