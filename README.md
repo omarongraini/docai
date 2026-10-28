@@ -28,9 +28,9 @@ cd ..
 uv run alembic upgrade head
 ```
 
-### run the app
+### run the chat app
 ```bash 
-uv run streamlit run app.py
+uv run streamlit run app_chat.py
 ```
 
 
