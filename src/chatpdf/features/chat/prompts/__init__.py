@@ -1,4 +1,4 @@
-from chatpdf.rag.prompts import ar, en
+from chatpdf.features.chat.prompts import ar, en
 
 _PROMPTS = {"en": en, "ar": ar}
 

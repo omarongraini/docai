@@ -6,9 +6,9 @@ from chatpdf.factories import (
     get_llm,
     get_vector_store,
 )
+from chatpdf.features.chat.prompts import get_prompts
 from chatpdf.logger import logger
 from chatpdf.models import Chunk
-from chatpdf.rag.prompts import get_prompts
 
 
 def retrieve(
